@@ -22,7 +22,55 @@ export class BmsAccountService {
     private readonly acceptAppRepo: Repository<AcceptApp>,
     @InjectRepository(Company)
     private readonly companyRepo: Repository<Company>,
-  ) {}
+  ) { }
+
+  async GetInfoAccountById(id: string) {
+  try {
+    // === 1. Lấy thông tin tài khoản ===
+    const account = await this.accountRepo.findOne({
+      where: { id },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        email: true,
+        phone: true,
+        address: true,
+        date_of_birth: true,
+        gender: true,
+      },
+    });
+
+    // === 2. Kiểm tra tồn tại ===
+    if (!account) {
+      throw new NotFoundException('Tài khoản không tồn tại');
+    }
+
+    // === 3. Chuẩn hóa response ===
+    const response = {
+      id: account.id,
+      username: account.username,
+      name: account.name,
+      email: account.email,
+      phone: account.phone,
+      address: account.address,
+      date_of_birth: account.date_of_birth,
+      gender: account.gender,
+    };
+
+    return {
+      success: true,
+      message: 'Success',
+      statusCode: HttpStatus.OK,
+      result: response,
+    };
+
+  } catch (error) {
+    if (error instanceof HttpException) throw error;
+    throw new InternalServerErrorException('Lỗi hệ thống. Vui lòng thử lại sau.');
+  }
+}
+
 
   // M2_v1.F2
   async CreateAccout(id: string, data: DTO_RQ_Account) {

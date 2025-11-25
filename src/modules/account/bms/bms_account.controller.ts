@@ -14,6 +14,7 @@ import { Roles } from 'src/decorator/roles.decorator';
 import { CompanyIdParam } from 'src/param/CompanyIdParam';
 import { DTO_RQ_Account } from './bms_account.dto';
 import { AccountIdParam } from 'src/param/AccountIdParam';
+import { UUIDParam } from 'src/param/UUIDParam';
 
 @Controller('bms-account')
 @UseGuards(TokenGuard)
@@ -60,5 +61,11 @@ export class BmsAccountController {
   @Roles('ADMIN', 'STAFF')
   async GetListAssistantByCompanyId(@Param() param: CompanyIdParam) {
     return await this.service.GetListAssistantByCompanyId(param.id);
+  }
+
+  @Get(':id/info')
+  @Roles('ADMIN', 'STAFF')
+  async GetInfoAccountById(@Param() param: UUIDParam) {
+    return await this.service.GetInfoAccountById(param.id);
   }
 }
