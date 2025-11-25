@@ -17,25 +17,25 @@ import { CommissionAgent } from './commission_agent.entity';
 export class Account {
   @PrimaryGeneratedColumn('uuid')
   id: string;
-  @Column()
+  @Column({ type: 'varchar', unique: true, nullable: false, length: 255 })
   username: string;
-  @Column()
+  @Column({ type: 'varchar', nullable: false, length: 255 })
   password: string;
-  @Column()
+  @Column({ type: 'varchar', nullable: true, length: 255 })
   email: string;
-  @Column()
+  @Column({ type: 'varchar', nullable: false, length: 20 })
   phone: string;
-  @Column()
+  @Column({ type: 'varchar', nullable: false, length: 50 })
   role: string;
-  @Column()
+  @Column({ type: 'varchar', nullable: false, length: 255 })
   address: string;
-  @Column()
+  @Column({ type: 'date', nullable: true })
   date_of_birth: Date;
-  @Column()
+  @Column({ type: 'boolean', nullable: false })
   status: boolean;
-  @Column()
-  gender: string;
-  @Column()
+  @Column({ type: 'int', nullable: true })
+  gender: number;
+  @Column({ type: 'varchar', nullable: false, length: 255 })
   name: string;
   @CreateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;

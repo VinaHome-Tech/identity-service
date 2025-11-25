@@ -11,13 +11,13 @@ import { Account } from './account.entity';
 export class AcceptApp {
   @PrimaryGeneratedColumn('uuid')
   id: string;
-  @Column()
+  @Column({ type: 'boolean', nullable: false })
   bms: boolean;
-  @Column()
+  @Column({ type: 'boolean', nullable: false })
   cms: boolean;
-  @Column()
+  @Column({ type: 'boolean', nullable: false })
   ams: boolean;
-  @Column()
+  @Column({ type: 'boolean', nullable: false })
   driver: boolean;
   @Column({ nullable: true }) // tạm thời cho nullable
   account_id: string;

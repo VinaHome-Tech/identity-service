@@ -83,7 +83,7 @@ export class BMSAuthService {
     } catch (error) {
       if (error instanceof HttpException) throw error;
       console.error(error);
-      throw new InternalServerErrorException('Đăng nhập không thành công');
+      throw new InternalServerErrorException('Lỗi hệ thống. Vui lòng thử lại sau');
     }
   }
 

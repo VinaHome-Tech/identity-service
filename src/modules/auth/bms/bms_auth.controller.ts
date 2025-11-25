@@ -1,6 +1,6 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { BMSAuthService } from './bms_auth.service';
-import { DTO_RQ_LoginBMS, DTO_RQ_LogoutBMS } from './bms_auth.dto';
+import { BMSAuthService } from '../bms/bms_auth.service';
+import { DTO_RQ_LoginBMS, DTO_RQ_LogoutBMS } from '../bms/bms_auth.dto';
 
 @Controller('bms-auth')
 export class BMSAuthController {

@@ -5,10 +5,10 @@ import { Account } from 'src/entities/account.entity';
 import { SPAccountController } from './sp_account.controller';
 import { SPAccountService } from './sp_account.service';
 import { Company } from 'src/entities/company.entity';
-import { BmsAccountController } from './bms_account.controller';
-import { BmsAccountService } from './bms_account.service';
+import { BmsAccountController } from './bms/bms_account.controller';
+import { BmsAccountService } from './bms/bms_account.service';
 import { CommissionAgent } from 'src/entities/commission_agent.entity';
-import { BmsAgentController } from './bms_agent.controller';
+import { BmsAgentController } from './bms/bms_agent.controller';
 import { BmsAgentService } from './bms_agent.service';
 
 @Module({

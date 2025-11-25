@@ -3,6 +3,7 @@ import {
   IsBoolean,
   IsDateString,
   IsEmail,
+  IsInt,
   IsNotEmpty,
   IsObject,
   IsOptional,
@@ -60,9 +61,9 @@ export class DTO_RQ_AdminAccount {
   @IsOptional()
   date_of_birth: Date;
 
-  @IsString()
+  @IsInt()
   @IsNotEmpty({ message: 'Giới tính không được để trống' })
-  gender: string;
+  gender: number;
 
   @IsString()
   @IsNotEmpty({ message: 'Vai trò không được để trống' })

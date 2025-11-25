@@ -6,8 +6,8 @@ import configuration from 'src/config/configuration';
 import { AcceptApp } from 'src/entities/accept_app.entity';
 import { Account } from 'src/entities/account.entity';
 import { Company } from 'src/entities/company.entity';
-import { BMSAuthController } from './bms_auth.controller';
-import { BMSAuthService } from './bms_auth.service';
+import { BMSAuthController } from './bms/bms_auth.controller';
+import { BMSAuthService } from './bms/bms_auth.service';
 import { RefreshToken } from 'src/entities/refresh_token.entity';
 @Module({
   imports: [

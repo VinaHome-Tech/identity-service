@@ -7,7 +7,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { BmsAgentService } from './bms_agent.service';
+import { BmsAgentService } from '../bms_agent.service';
 import { TokenGuard } from 'src/guards/token.guard';
 import { Roles } from 'src/decorator/roles.decorator';
 import { CompanyIdParam } from 'src/param/CompanyIdParam';

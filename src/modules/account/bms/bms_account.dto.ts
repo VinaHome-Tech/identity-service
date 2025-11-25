@@ -44,7 +44,7 @@ export class DTO_RQ_Account {
   date_of_birth: Date;
   @IsInt()
   @IsOptional()
-  gender: string;
+  gender: number;
   @IsString()
   role: string;
   @IsBoolean()

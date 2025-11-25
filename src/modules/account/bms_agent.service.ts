@@ -6,7 +6,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { DTO_RQ_Agent } from './bms_agent.dto';
+import { DTO_RQ_Agent } from './bms/bms_agent.dto';
 import { CommissionAgent } from 'src/entities/commission_agent.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Account } from 'src/entities/account.entity';

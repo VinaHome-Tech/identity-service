@@ -8,11 +8,11 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Company } from 'src/entities/company.entity';
 import { Repository } from 'typeorm';
-import { DTO_RP_Company, DTO_RQ_Company } from './sp_company.dto';
+import { DTO_RP_Company, DTO_RQ_Company } from './platform_company.dto';
 import { plainToInstance } from 'class-transformer';
 
 @Injectable()
-export class SPCompanyService {
+export class PLATFORMCompanyService {
   constructor(
     @InjectRepository(Company)
     private readonly repo: Repository<Company>,
