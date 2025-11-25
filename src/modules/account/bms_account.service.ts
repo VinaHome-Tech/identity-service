@@ -1,0 +1,305 @@
+import {
+  ConflictException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import * as argon2 from 'argon2';
+import { AcceptApp } from 'src/entities/accept_app.entity';
+import { Account } from 'src/entities/account.entity';
+import { Company } from 'src/entities/company.entity';
+import { Repository } from 'typeorm';
+import { DTO_RQ_Account } from './bms_account.dto';
+@Injectable()
+export class BmsAccountService {
+  constructor(
+    @InjectRepository(Account)
+    private readonly accountRepo: Repository<Account>,
+    @InjectRepository(AcceptApp)
+    private readonly acceptAppRepo: Repository<AcceptApp>,
+    @InjectRepository(Company)
+    private readonly companyRepo: Repository<Company>,
+  ) {}
+
+  // M2_v1.F2
+  async CreateAccout(id: string, data: DTO_RQ_Account) {
+    try {
+      console.time('CreateAccout');
+      const company = await this.companyRepo.findOne({
+        where: { id: id },
+        select: { id: true, company_code: true },
+      });
+      if (!company) {
+        throw new NotFoundException('Không tìm thấy dữ liệu công ty');
+      }
+
+      const newUsername = data.username + '.' + company.company_code;
+      const existing = await this.accountRepo.findOne({
+        where: { username: newUsername },
+      });
+      if (existing) throw new ConflictException('Tài khoản đã tồn tại');
+
+      const hashedPassword = await argon2.hash(data.password);
+
+      const newAccount = this.accountRepo.create({
+        company: company,
+        username: newUsername,
+        password: hashedPassword,
+        email: data.email,
+        phone: data.phone,
+        role: data.role,
+        address: data.address,
+        date_of_birth: data.date_of_birth,
+        status: data.status,
+        name: data.name,
+        gender: data.gender,
+        accept_app: this.acceptAppRepo.create({
+          bms: data.accept_app.bms,
+          cms: data.accept_app.cms,
+          ams: data.accept_app.ams,
+          driver: data.accept_app.driver,
+        }),
+      });
+
+      await this.accountRepo.save(newAccount);
+      const response = {
+        id: newAccount.id,
+        username: newAccount.username,
+        email: newAccount.email,
+        phone: newAccount.phone,
+        role: newAccount.role,
+        address: newAccount.address,
+        date_of_birth: newAccount.date_of_birth,
+        status: newAccount.status,
+        name: newAccount.name,
+        gender: newAccount.gender,
+        accept_app: {
+          bms: newAccount.accept_app.bms,
+          cms: newAccount.accept_app.cms,
+          ams: newAccount.accept_app.ams,
+          driver: newAccount.accept_app.driver,
+        },
+      };
+      return {
+        success: true,
+        message: 'Success',
+        statusCode: HttpStatus.CREATED,
+        result: response,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      console.error(error);
+      throw new InternalServerErrorException('Tạo tài khoản thất bại');
+    } finally {
+      console.timeEnd('CreateAccout');
+    }
+  }
+
+  // M2_v1.F3
+  async GetListAccountByCompanyId(id: string) {
+    try {
+      console.time('GetListAccountByCompanyId');
+      const company = await this.companyRepo.findOne({
+        where: { id: id },
+        select: { id: true },
+      });
+      if (!company) {
+        throw new NotFoundException('Không tìm thấy dữ liệu công ty');
+      }
+      const accounts = await this.accountRepo.find({
+        where: { company: { id: company.id } },
+        relations: { accept_app: true },
+        order: { created_at: 'ASC' },
+      });
+      const response = accounts.map((acc) => ({
+        id: acc.id,
+        username: acc.username,
+        email: acc.email,
+        phone: acc.phone,
+        role: acc.role,
+        address: acc.address,
+        date_of_birth: acc.date_of_birth,
+        status: acc.status,
+        name: acc.name,
+        gender: acc.gender,
+        accept_app: {
+          bms: acc.accept_app?.bms,
+          cms: acc.accept_app?.cms,
+          ams: acc.accept_app?.ams,
+          driver: acc.accept_app?.driver,
+        },
+      }));
+      return {
+        success: true,
+        message: 'Success',
+        statusCode: HttpStatus.OK,
+        result: response,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      console.error(error);
+      throw new InternalServerErrorException(
+        'Lấy danh sách tài khoản thất bại',
+      );
+    } finally {
+      console.timeEnd('GetListAccountByCompanyId');
+    }
+  }
+
+  // M2_v1.F4
+  async UpdateAccount(id: string, data: DTO_RQ_Account) {
+    try {
+      console.time('UpdateAccount');
+      const account = await this.accountRepo.findOne({
+        where: { id: id },
+        relations: { accept_app: true },
+      });
+      if (!account) {
+        throw new NotFoundException('Không tìm thấy tài khoản');
+      }
+
+      account.email = data.email;
+      account.phone = data.phone;
+      account.role = data.role;
+      account.address = data.address;
+      account.date_of_birth = data.date_of_birth;
+      account.status = data.status;
+      account.name = data.name;
+      account.gender = data.gender;
+      account.accept_app = {
+        ...account.accept_app,
+        bms: data.accept_app.bms,
+        cms: data.accept_app.cms,
+        ams: data.accept_app.ams,
+        driver: data.accept_app.driver,
+      };
+      await this.accountRepo.save(account);
+      const response = {
+        id: account.id,
+        username: account.username,
+        email: account.email,
+        phone: account.phone,
+        role: account.role,
+        address: account.address,
+        date_of_birth: account.date_of_birth,
+        status: account.status,
+        name: account.name,
+        gender: account.gender,
+        accept_app: {
+          bms: account.accept_app?.bms,
+          cms: account.accept_app?.cms,
+          ams: account.accept_app?.ams,
+          driver: account.accept_app?.driver,
+        },
+      };
+      return {
+        success: true,
+        message: 'Success',
+        statusCode: HttpStatus.OK,
+        result: response,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      console.error(error);
+      throw new InternalServerErrorException('Cập nhật tài khoản thất bại');
+    } finally {
+      console.timeEnd('UpdateAccount');
+    }
+  }
+
+  // M2_v1.F5
+  async DeleteAccount(id: string) {
+    try {
+      console.time('DeleteAccount');
+      const account = await this.accountRepo.findOne({
+        where: { id: id },
+      });
+      if (!account) {
+        throw new NotFoundException('Không tìm thấy tài khoản');
+      }
+      await this.accountRepo.delete({ id: id });
+      return {
+        success: true,
+        message: 'Success',
+        statusCode: HttpStatus.OK,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      console.error(error);
+      throw new InternalServerErrorException('Xóa tài khoản thất bại');
+    } finally {
+      console.timeEnd('DeleteAccount');
+    }
+  }
+
+  async GetListDriverByCompanyId(id: string) {
+    try {
+      console.time('GetListDriverByCompanyId');
+      const company = await this.companyRepo.findOne({
+        where: { id: id },
+        select: { id: true },
+      });
+      if (!company) {
+        throw new NotFoundException('Không tìm thấy dữ liệu công ty');
+      }
+      const drivers = await this.accountRepo.find({
+        where: { company: { id: company.id }, role: 'DRIVER', status: true },
+        order: { created_at: 'ASC' },
+      });
+      const response = drivers.map((acc) => ({
+        id: acc.id,
+        name: acc.name,
+        phone: acc.phone,
+      }));
+      return {
+        success: true,
+        message: 'Success',
+        statusCode: HttpStatus.OK,
+        result: response,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      console.error(error);
+      throw new InternalServerErrorException('Lấy danh sách tài xế thất bại');
+    } finally {
+      console.timeEnd('GetListDriverByCompanyId');
+    }
+  }
+
+  async GetListAssistantByCompanyId(id: string) {
+    try {
+      console.time('GetListAssistantByCompanyId');
+      const company = await this.companyRepo.findOne({
+        where: { id: id },
+        select: { id: true },
+      });
+      if (!company) {
+        throw new NotFoundException('Không tìm thấy dữ liệu công ty');
+      }
+      const assistants = await this.accountRepo.find({
+        where: { company: { id: company.id }, role: 'ASSISTANT', status: true },
+        order: { created_at: 'ASC' },
+      });
+      const response = assistants.map((acc) => ({
+        id: acc.id,
+        name: acc.name,
+        phone: acc.phone,
+      }));
+      return {
+        success: true,
+        message: 'Success',
+        statusCode: HttpStatus.OK,
+        result: response,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      console.error(error);
+      throw new InternalServerErrorException('Lấy danh sách phụ xe thất bại');
+    } finally {
+      console.timeEnd('GetListAssistantByCompanyId');
+    }
+  }
+}
