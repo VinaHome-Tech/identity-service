@@ -12,7 +12,7 @@ import { BmsAccountService } from '../bms/bms_account.service';
 import { TokenGuard } from 'src/guards/token.guard';
 import { Roles } from 'src/decorator/roles.decorator';
 import { CompanyIdParam } from 'src/param/CompanyIdParam';
-import { DTO_RQ_Account } from './bms_account.dto';
+import { DTO_RQ_Account, DTO_RQ_AccountInfo } from './bms_account.dto';
 import { AccountIdParam } from 'src/param/AccountIdParam';
 import { UUIDParam } from 'src/param/UUIDParam';
 
@@ -63,9 +63,20 @@ export class BmsAccountController {
     return await this.service.GetListAssistantByCompanyId(param.id);
   }
 
+  // M2_v1.F10
   @Get(':id/info')
   @Roles('ADMIN', 'STAFF')
   async GetInfoAccountById(@Param() param: UUIDParam) {
     return await this.service.GetInfoAccountById(param.id);
+  }
+
+  // M2_v1.F11
+  @Put(':id/info')
+  @Roles('ADMIN', 'STAFF')
+  async UpdateInfoAccountById(
+    @Param() param: UUIDParam,
+    @Body() data: DTO_RQ_AccountInfo,
+  ) {
+    return await this.service.UpdateInfoAccountById(param.id, data);
   }
 }

@@ -12,7 +12,7 @@ import { AcceptApp } from 'src/entities/accept_app.entity';
 import { Account } from 'src/entities/account.entity';
 import { Company } from 'src/entities/company.entity';
 import { Repository } from 'typeorm';
-import { DTO_RQ_Account } from './bms_account.dto';
+import { DTO_RQ_Account, DTO_RQ_AccountInfo } from './bms_account.dto';
 @Injectable()
 export class BmsAccountService {
   constructor(
@@ -24,52 +24,120 @@ export class BmsAccountService {
     private readonly companyRepo: Repository<Company>,
   ) { }
 
+
+  // M2_v1.F10
   async GetInfoAccountById(id: string) {
-  try {
-    // === 1. Lấy thông tin tài khoản ===
-    const account = await this.accountRepo.findOne({
-      where: { id },
-      select: {
-        id: true,
-        username: true,
-        name: true,
-        email: true,
-        phone: true,
-        address: true,
-        date_of_birth: true,
-        gender: true,
-      },
-    });
+    try {
+      // === 1. Lấy thông tin tài khoản ===
+      const account = await this.accountRepo.findOne({
+        where: { id },
+        select: {
+          id: true,
+          username: true,
+          name: true,
+          email: true,
+          phone: true,
+          address: true,
+          date_of_birth: true,
+          gender: true,
+        },
+      });
 
-    // === 2. Kiểm tra tồn tại ===
-    if (!account) {
-      throw new NotFoundException('Tài khoản không tồn tại');
+      // === 2. Kiểm tra tồn tại ===
+      if (!account) {
+        throw new NotFoundException('Tài khoản không tồn tại');
+      }
+
+      // === 3. Chuẩn hóa response ===
+      const response = {
+        id: account.id,
+        username: account.username,
+        name: account.name,
+        email: account.email,
+        phone: account.phone,
+        address: account.address,
+        date_of_birth: account.date_of_birth,
+        gender: account.gender,
+      };
+
+      return {
+        success: true,
+        message: 'Success',
+        statusCode: HttpStatus.OK,
+        result: response,
+      };
+
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException('Lỗi hệ thống. Vui lòng thử lại sau.');
     }
-
-    // === 3. Chuẩn hóa response ===
-    const response = {
-      id: account.id,
-      username: account.username,
-      name: account.name,
-      email: account.email,
-      phone: account.phone,
-      address: account.address,
-      date_of_birth: account.date_of_birth,
-      gender: account.gender,
-    };
-
-    return {
-      success: true,
-      message: 'Success',
-      statusCode: HttpStatus.OK,
-      result: response,
-    };
-
-  } catch (error) {
-    if (error instanceof HttpException) throw error;
-    throw new InternalServerErrorException('Lỗi hệ thống. Vui lòng thử lại sau.');
   }
-}
+
+  // M2_v1.F11
+  async UpdateInfoAccountById(id: string, data: DTO_RQ_AccountInfo) {
+    try {
+      // 1. Kiểm tra tồn tại
+      const account = await this.accountRepo.findOne({ where: { id } });
+
+      if (!account) {
+        throw new NotFoundException('Tài khoản không tồn tại');
+      }
+
+      // Hàm chuẩn hóa dữ liệu FE gửi lên
+      const normalize = (value: any) => {
+        if (value === '' || value === undefined || value === null) return null;
+        return value;
+      };
+
+      // 2. Build dữ liệu update
+      const updateData: Partial<Account> = {
+        name: normalize(data.name),
+        phone: normalize(data.phone),
+        email: normalize(data.email),
+        address: normalize(data.address),
+        date_of_birth: normalize(data.date_of_birth),
+        gender: normalize(data.gender),
+      };
+
+      // Xóa field null nếu bạn không muốn update trường đó
+      // (push option nếu cần)
+      // Object.keys(updateData).forEach(
+      //   (key) => updateData[key] === undefined && delete updateData[key],
+      // );
+
+      // 3. Cập nhật
+      await this.accountRepo.update(id, updateData);
+
+      // 4. Lấy dữ liệu mới
+      const updatedAccount = await this.accountRepo.findOne({
+        where: { id },
+        select: [
+          'id',
+          'username',
+          'name',
+          'email',
+          'phone',
+          'address',
+          'date_of_birth',
+          'gender',
+        ],
+      });
+
+
+      return {
+        success: true,
+        message: 'Success',
+        result: updatedAccount,
+      };
+
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+
+      console.error(error);
+      throw new InternalServerErrorException('Lỗi hệ thống. Vui lòng thử lại sau.');
+    }
+  }
+
 
 
   // M2_v1.F2

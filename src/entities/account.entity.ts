@@ -27,7 +27,7 @@ export class Account {
   phone: string;
   @Column({ type: 'varchar', nullable: false, length: 50 })
   role: string;
-  @Column({ type: 'varchar', nullable: false, length: 255 })
+  @Column({ type: 'varchar', nullable: true, length: 255 })
   address: string;
   @Column({ type: 'date', nullable: true })
   date_of_birth: Date;
