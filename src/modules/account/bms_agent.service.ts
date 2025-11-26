@@ -10,7 +10,7 @@ import { DTO_RQ_Agent } from './bms/bms_agent.dto';
 import { CommissionAgent } from 'src/entities/commission_agent.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Account } from 'src/entities/account.entity';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Company } from 'src/entities/company.entity';
 import * as argon2 from 'argon2';
 import { AcceptApp } from 'src/entities/accept_app.entity';
@@ -25,93 +25,136 @@ export class BmsAgentService {
     private readonly acceptAppRepo: Repository<AcceptApp>,
     @InjectRepository(CommissionAgent)
     private readonly commissionRepo: Repository<CommissionAgent>,
-  ) {}
+    private readonly dataSource: DataSource,
+  ) { }
 
   // M2_v1.F6
   async CreateAgentAccount(companyId: string, data: DTO_RQ_Agent) {
     try {
-      console.time('CreateAgentAccount');
-
+      // 1. check company
       const company = await this.companyRepo.findOne({
         where: { id: companyId },
         select: { id: true, company_code: true },
       });
-      if (!company) {
-        throw new NotFoundException('Không tìm thấy dữ liệu công ty');
-      }
+      if (!company) throw new NotFoundException('Không tìm thấy dữ liệu công ty');
 
-      const newUsername = data.username + '.' + company.company_code;
+      // 2. build username
+      const newUsername = `${data.username}.${company.company_code}`;
+
+      // 3. check duplicate username
       const existing = await this.accountRepo.findOne({
         where: { username: newUsername },
+        select: { id: true },
       });
       if (existing) throw new ConflictException('Tài khoản đã tồn tại');
 
+      // 4. hash pw
       const hashedPassword = await argon2.hash(data.password);
+      const normalize = (v: any) =>
+        v === '' || v === undefined || v === null ? null : v;
 
-      const newAccount = this.accountRepo.create({
-        company: company,
-        username: newUsername,
-        password: hashedPassword,
-        email: data.email,
-        phone: data.phone,
-        role: 'AGENT',
-        address: data.address,
-        status: data.status,
-        name: data.name,
-        accept_app: this.acceptAppRepo.create({
+      // 5. transaction
+      const result = await this.dataSource.transaction(async (manager) => {
+        // create account
+        const account = manager.create(Account, {
+          company,
+          username: newUsername,
+          password: hashedPassword,
+          email: normalize(data.email),
+          phone: normalize(data.phone),
+          role: 'AGENT',
+          address: normalize(data.address),
+          status: data.status,
+          name: data.name,
+        });
+        const savedAcc = await manager.save(account);
+
+        // create accept_app
+        await manager.save(AcceptApp, {
           bms: false,
           cms: false,
           ams: true,
           driver: false,
-        }),
-      });
-      await this.accountRepo.save(newAccount);
+          account: savedAcc,
+        });
 
-      const commission = this.commissionRepo.create({
-        ticket_type: data.commission.ticket_type,
-        ticket_value: data.commission.ticket_value,
-        goods_type: data.commission.goods_type,
-        goods_value: data.commission.goods_value,
-        account: newAccount,
-      });
-      await this.commissionRepo.save(commission);
+        // create commission
+        const savedCommission = await manager.save(CommissionAgent, {
+          ticket_type: data.commission.ticket_type,
+          ticket_value: data.commission.ticket_value,
+          goods_type: data.commission.goods_type,
+          goods_value: data.commission.goods_value,
+          account: savedAcc,
+        });
 
-      const response = {
-        id: newAccount.id,
-        username: newAccount.username,
-        phone: newAccount.phone,
-        email: newAccount.email,
-        name: newAccount.name,
-        address: newAccount.address,
-        status: newAccount.status,
-        commission: commission,
-      };
+        // re-fetch commission (clean)
+        const cleanCommission = await manager.findOne(CommissionAgent, {
+          where: { id: savedCommission.id },
+          select: {
+            id: true,
+            ticket_type: true,
+            ticket_value: true,
+            goods_type: true,
+            goods_value: true,
+          },
+        });
+
+        return {
+          id: savedAcc.id,
+          username: savedAcc.username,
+          phone: savedAcc.phone,
+          email: savedAcc.email,
+          name: savedAcc.name,
+          address: savedAcc.address,
+          status: savedAcc.status,
+          commission: cleanCommission,
+        };
+      });
 
       return {
         success: true,
         message: 'Success',
         statusCode: HttpStatus.CREATED,
-        result: response,
+        result,
       };
     } catch (error) {
       if (error instanceof HttpException) throw error;
+
       console.error(error);
-      throw new InternalServerErrorException('Thêm đại lý thất bại');
-    } finally {
-      console.timeEnd('CreateAgentAccount');
+      throw new InternalServerErrorException('Lỗi hệ thống. Vui lòng thử lại sau.');
     }
   }
+
 
   // M2_v1.F7
   async GetListAgentByCompanyId(companyId: string) {
     try {
-      console.time('GetListAgentByCompanyId');
+      const agents = await this.accountRepo
+        .createQueryBuilder('acc')
+        .leftJoin('acc.commission_agent', 'commission')
+        .where('acc.company_id = :companyId', { companyId })
+        .andWhere('acc.role = :role', { role: 'AGENT' })
+        .orderBy('acc.created_at', 'ASC')
+        .select([
+          // Account fields
+          'acc.id',
+          'acc.username',
+          'acc.email',
+          'acc.phone',
+          'acc.name',
+          'acc.address',
+          'acc.status',
 
-      const agents = await this.accountRepo.find({
-        where: { company: { id: companyId }, role: 'AGENT' },
-        relations: ['commission_agent'],
-      });
-      if (!agents || agents.length === 0) {
+          // Commission fields
+
+          'commission.ticket_type',
+          'commission.ticket_value',
+          'commission.goods_type',
+          'commission.goods_value',
+        ])
+        .getMany();
+
+      if (!agents.length) {
         throw new NotFoundException('Không tìm thấy dữ liệu đại lý');
       }
 
@@ -119,16 +162,33 @@ export class BmsAgentService {
         success: true,
         message: 'Success',
         statusCode: HttpStatus.OK,
-        result: agents,
+        result: agents.map((a) => ({
+          id: a.id,
+          username: a.username,
+          phone: a.phone,
+          email: a.email,
+          name: a.name,
+          address: a.address,
+          status: a.status,
+          commission: a.commission_agent
+            ? {
+              ticket_type: a.commission_agent.ticket_type,
+              ticket_value: a.commission_agent.ticket_value,
+              goods_type: a.commission_agent.goods_type,
+              goods_value: a.commission_agent.goods_value,
+            }
+            : null,
+        })),
       };
     } catch (error) {
       if (error instanceof HttpException) throw error;
       console.error(error);
-      throw new InternalServerErrorException('Lấy danh sách đại lý thất bại');
-    } finally {
-      console.timeEnd('GetListAgentByCompanyId');
+      throw new InternalServerErrorException(
+        'Lỗi hệ thống. Vui lòng thử lại sau.'
+      );
     }
   }
+
 
   // M2_v1.F9
   async DeleteAgentAccount(agentId: string) {

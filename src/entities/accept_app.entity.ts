@@ -22,7 +22,9 @@ export class AcceptApp {
   @Column({ nullable: true }) // tạm thời cho nullable
   account_id: string;
 
-  @OneToOne(() => Account, (account) => account.accept_app)
+  @OneToOne(() => Account, (account) => account.accept_app, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'account_id' }) // chỉ định rõ cột khóa ngoại
   account: Account;
 }

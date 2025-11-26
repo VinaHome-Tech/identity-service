@@ -13,6 +13,7 @@ import { Roles } from 'src/decorator/roles.decorator';
 import { CompanyIdParam } from 'src/param/CompanyIdParam';
 import { DTO_RQ_Agent } from './bms_agent.dto';
 import { AccountIdParam } from 'src/param/AccountIdParam';
+import { UUIDParam } from 'src/param/UUIDParam';
 
 @Controller('bms-agent')
 @UseGuards(TokenGuard)
@@ -23,7 +24,7 @@ export class BmsAgentController {
   @Post('companies/:id/agents')
   @Roles('ADMIN')
   async CreateAgentAccount(
-    @Param() param: CompanyIdParam,
+    @Param() param: UUIDParam,
     @Body() data: DTO_RQ_Agent,
   ) {
     return await this.service.CreateAgentAccount(param.id, data);

@@ -350,70 +350,90 @@ export class BmsAccountService {
   // M2_v1.F4
   async UpdateAccount(id: string, data: DTO_RQ_Account) {
     try {
-      console.time('UpdateAccount');
+      // 1. Kiểm tra tài khoản có tồn tại không (chỉ select id)
       const account = await this.accountRepo.findOne({
-        where: { id: id },
-        relations: { accept_app: true },
+        where: { id },
+        select: { id: true },
       });
+
       if (!account) {
         throw new NotFoundException('Không tìm thấy tài khoản');
       }
 
-      account.email = data.email;
-      account.phone = data.phone;
-      account.role = data.role;
-      account.address = data.address;
-      account.date_of_birth = data.date_of_birth;
-      account.status = data.status;
-      account.name = data.name;
-      account.gender = data.gender;
-      account.accept_app = {
-        ...account.accept_app,
-        bms: data.accept_app.bms,
-        cms: data.accept_app.cms,
-        ams: data.accept_app.ams,
-        driver: data.accept_app.driver,
-      };
-      await this.accountRepo.save(account);
-      const response = {
-        id: account.id,
-        username: account.username,
-        email: account.email,
-        phone: account.phone,
-        role: account.role,
-        address: account.address,
-        date_of_birth: account.date_of_birth,
-        status: account.status,
-        name: account.name,
-        gender: account.gender,
-        accept_app: {
-          bms: account.accept_app?.bms,
-          cms: account.accept_app?.cms,
-          ams: account.accept_app?.ams,
-          driver: account.accept_app?.driver,
+      // 2. Chuẩn hóa dữ liệu
+      const normalize = (v: any) =>
+        v === '' || v === undefined || v === null ? null : v;
+
+      // 3. Update bảng account (NHANH vì không load entity)
+      await this.accountRepo.update(id, {
+        email: normalize(data.email),
+        phone: normalize(data.phone),
+        role: data.role,
+        address: normalize(data.address),
+        date_of_birth: normalize(data.date_of_birth),
+        status: data.status,
+        name: data.name,
+        gender: data.gender,
+      });
+
+      // 4. Update bảng AcceptApp
+      await this.acceptAppRepo.update(
+        { account: { id } }, // where
+        {
+          bms: data.accept_app.bms,
+          cms: data.accept_app.cms,
+          ams: data.accept_app.ams,
+          driver: data.accept_app.driver,
         },
-      };
+      );
+
+      // 5. Lấy lại dữ liệu tối ưu (chỉ field FE cần)
+      const result = await this.accountRepo.findOne({
+        where: { id },
+        relations: { accept_app: true },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          phone: true,
+          role: true,
+          address: true,
+          date_of_birth: true,
+          status: true,
+          name: true,
+          gender: true,
+          accept_app: {
+            bms: true,
+            cms: true,
+            ams: true,
+            driver: true,
+          },
+        },
+      });
+
       return {
         success: true,
         message: 'Success',
         statusCode: HttpStatus.OK,
-        result: response,
+        result,
       };
     } catch (error) {
       if (error instanceof HttpException) throw error;
+
       console.error(error);
-      throw new InternalServerErrorException('Cập nhật tài khoản thất bại');
-    } finally {
-      console.timeEnd('UpdateAccount');
+      throw new InternalServerErrorException(
+        'Lỗi hệ thống. Vui lòng thử lại sau.',
+      );
     }
   }
+
 
   // M2_v1.F5
   async DeleteAccount(id: string) {
     try {
-      console.time('DeleteAccount');
       const account = await this.accountRepo.findOne({
-        where: { id: id },
+        where: { id },
+        select: { id: true },
       });
       if (!account) {
         throw new NotFoundException('Không tìm thấy tài khoản');
@@ -427,9 +447,7 @@ export class BmsAccountService {
     } catch (error) {
       if (error instanceof HttpException) throw error;
       console.error(error);
-      throw new InternalServerErrorException('Xóa tài khoản thất bại');
-    } finally {
-      console.timeEnd('DeleteAccount');
+      throw new InternalServerErrorException('Lỗi hệ thống. Vui lòng thử lại sau.');
     }
   }
 
