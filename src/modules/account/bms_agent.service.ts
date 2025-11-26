@@ -193,29 +193,41 @@ export class BmsAgentService {
   // M2_v1.F9
   async DeleteAgentAccount(agentId: string) {
     try {
-      console.time('DeleteAgentAccount');
-
+      // 1. Kiểm tra tồn tại + load ID cho tối ưu
       const agent = await this.accountRepo.findOne({
-        where: { id: agentId.toString(), role: 'AGENT' },
+        where: { id: agentId, role: 'AGENT' },
+        select: { id: true },
       });
+
       if (!agent) {
         throw new NotFoundException('Không tìm thấy dữ liệu đại lý');
       }
 
-      await this.accountRepo.delete({ id: agentId.toString() });
+      // 2. Transaction để tránh mất đồng bộ dữ liệu
+      await this.dataSource.transaction(async (manager) => {
+        // Xóa commission agent
+        await manager.delete(CommissionAgent, { account: { id: agent.id } });
+
+        // Xóa accept_app (nếu không bật onDelete: 'CASCADE')
+        await manager.delete(AcceptApp, { account: { id: agent.id } });
+
+        // Xóa account
+        await manager.delete(Account, { id: agent.id });
+      });
 
       return {
         success: true,
-        message: 'Xoá đại lý thành công',
+        message: 'Success',
         statusCode: HttpStatus.OK,
-        result: null,
       };
+
     } catch (error) {
       if (error instanceof HttpException) throw error;
       console.error(error);
-      throw new InternalServerErrorException('Xoá đại lý thất bại');
-    } finally {
-      console.timeEnd('DeleteAgentAccount');
+      throw new InternalServerErrorException(
+        'Lỗi hệ thống. Vui lòng thử lại sau.',
+      );
     }
   }
+
 }
