@@ -269,53 +269,60 @@ export class BmsAccountService {
   // M2_v1.F3
   async GetListAccountByCompanyId(id: string) {
     try {
-      console.time('GetListAccountByCompanyId');
+      // 1. kiểm tra công ty có tồn tại
       const company = await this.companyRepo.findOne({
-        where: { id: id },
+        where: { id },
         select: { id: true },
       });
+
       if (!company) {
         throw new NotFoundException('Không tìm thấy dữ liệu công ty');
       }
-      const accounts = await this.accountRepo.find({
-        where: { company: { id: company.id } },
-        relations: { accept_app: true },
-        order: { created_at: 'ASC' },
-      });
-      const response = accounts.map((acc) => ({
-        id: acc.id,
-        username: acc.username,
-        email: acc.email,
-        phone: acc.phone,
-        role: acc.role,
-        address: acc.address,
-        date_of_birth: acc.date_of_birth,
-        status: acc.status,
-        name: acc.name,
-        gender: acc.gender,
-        accept_app: {
-          bms: acc.accept_app?.bms,
-          cms: acc.accept_app?.cms,
-          ams: acc.accept_app?.ams,
-          driver: acc.accept_app?.driver,
-        },
-      }));
+
+      // 2. QueryBuilder: select tối ưu
+      const accounts = await this.accountRepo
+        .createQueryBuilder('acc')
+        .leftJoinAndSelect('acc.accept_app', 'accept_app')
+        .where('acc.company_id = :companyId', { companyId: company.id })
+        .orderBy('acc.created_at', 'ASC')
+        .select([
+          // Account fields
+          'acc.id',
+          'acc.username',
+          'acc.email',
+          'acc.phone',
+          'acc.role',
+          'acc.address',
+          'acc.date_of_birth',
+          'acc.status',
+          'acc.name',
+          'acc.gender',
+
+          // Accept_app fields
+          'accept_app.bms',
+          'accept_app.cms',
+          'accept_app.ams',
+          'accept_app.driver',
+        ])
+        .getMany();
+
       return {
         success: true,
         message: 'Success',
         statusCode: HttpStatus.OK,
-        result: response,
+        result: accounts,
       };
     } catch (error) {
       if (error instanceof HttpException) throw error;
+
       console.error(error);
       throw new InternalServerErrorException(
-        'Lấy danh sách tài khoản thất bại',
+        'Lỗi hệ thống. Vui lòng thử lại sau.',
       );
-    } finally {
-      console.timeEnd('GetListAccountByCompanyId');
     }
   }
+
+
 
   // M2_v1.F4
   async UpdateAccount(id: string, data: DTO_RQ_Account) {

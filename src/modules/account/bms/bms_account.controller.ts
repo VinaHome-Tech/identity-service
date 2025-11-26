@@ -21,6 +21,7 @@ import { UUIDParam } from 'src/param/UUIDParam';
 export class BmsAccountController {
   constructor(private readonly service: BmsAccountService) {}
 
+  // M2_v1.F2
   @Post('companies/:id/accounts')
   @Roles('ADMIN')
   async CreateAccout(
@@ -30,12 +31,14 @@ export class BmsAccountController {
     return await this.service.CreateAccout(param.id, data);
   }
 
+  // M2_v1.F3
   @Get('companies/:id/accounts')
   @Roles('ADMIN')
   async GetListAccountByCompanyId(@Param() param: CompanyIdParam) {
     return await this.service.GetListAccountByCompanyId(param.id);
   }
 
+  // M2_v1.F4
   @Put(':id')
   @Roles('ADMIN')
   async UpdateAccount(
@@ -45,6 +48,7 @@ export class BmsAccountController {
     return await this.service.UpdateAccount(param.id, data);
   }
 
+  // M2_v1.F5
   @Delete(':id')
   @Roles('ADMIN')
   async DeleteAccount(@Param() param: AccountIdParam) {
