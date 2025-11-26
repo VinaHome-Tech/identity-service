@@ -93,3 +93,14 @@ export class DTO_RQ_AccountInfo {
   @Max(3, { message: 'Giới tính không hợp lệ' })
   gender?: number;
 }
+
+export class DTO_RQ_ChangePassword {
+  @IsString()
+  @MinLength(8, { message: 'Mật khẩu cũ phải có ít nhất 8 ký tự' })
+  @MaxLength(50, { message: 'Mật khẩu cũ không được vượt quá 50 ký tự' })
+  old_password: string;
+  @IsString()
+  @MinLength(8, { message: 'Mật khẩu mới phải có ít nhất 8 ký tự' })
+  @MaxLength(50, { message: 'Mật khẩu mới không được vượt quá 50 ký tự' })
+  new_password: string;
+}

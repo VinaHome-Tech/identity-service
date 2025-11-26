@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   HttpException,
   HttpStatus,
@@ -12,7 +13,7 @@ import { AcceptApp } from 'src/entities/accept_app.entity';
 import { Account } from 'src/entities/account.entity';
 import { Company } from 'src/entities/company.entity';
 import { Repository } from 'typeorm';
-import { DTO_RQ_Account, DTO_RQ_AccountInfo } from './bms_account.dto';
+import { DTO_RQ_Account, DTO_RQ_AccountInfo, DTO_RQ_ChangePassword } from './bms_account.dto';
 @Injectable()
 export class BmsAccountService {
   constructor(
@@ -127,7 +128,58 @@ export class BmsAccountService {
       return {
         success: true,
         message: 'Success',
+        statusCode: HttpStatus.OK,
         result: updatedAccount,
+      };
+
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+
+      console.error(error);
+      throw new InternalServerErrorException('Lỗi hệ thống. Vui lòng thử lại sau.');
+    }
+  }
+
+  // M2_v1.F12
+  async ChangePasswordAccountById(id: string, data: DTO_RQ_ChangePassword) {
+    try {
+      const { old_password, new_password } = data;
+
+      // 1. Tìm thông tin tài khoản
+      const account = await this.accountRepo.findOne({
+        where: { id },
+        select: ['id', 'password'], // chỉ cần password để kiểm tra
+      });
+
+      if (!account) {
+        throw new NotFoundException('Tài khoản không tồn tại');
+      }
+
+      // 2. Kiểm tra mật khẩu cũ
+      const isOldPasswordCorrect = await argon2.verify(account.password, old_password);
+
+      if (!isOldPasswordCorrect) {
+        throw new BadRequestException('Mật khẩu cũ không chính xác');
+      }
+
+      // 3. Kiểm tra mật khẩu mới khác mật khẩu cũ
+      const isSamePassword = await argon2.verify(account.password, new_password);
+      if (isSamePassword) {
+        throw new BadRequestException('Mật khẩu mới không được trùng với mật khẩu cũ');
+      }
+
+      // 4. Hash mật khẩu mới
+      const hashedPassword = await argon2.hash(new_password);
+
+      // 5. Cập nhật vào database
+      await this.accountRepo.update(id, {
+        password: hashedPassword,
+      });
+
+      return {
+        success: true,
+        message: 'Success',
+        statusCode: HttpStatus.OK,
       };
 
     } catch (error) {

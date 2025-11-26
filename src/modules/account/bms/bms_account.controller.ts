@@ -12,7 +12,7 @@ import { BmsAccountService } from '../bms/bms_account.service';
 import { TokenGuard } from 'src/guards/token.guard';
 import { Roles } from 'src/decorator/roles.decorator';
 import { CompanyIdParam } from 'src/param/CompanyIdParam';
-import { DTO_RQ_Account, DTO_RQ_AccountInfo } from './bms_account.dto';
+import { DTO_RQ_Account, DTO_RQ_AccountInfo, DTO_RQ_ChangePassword } from './bms_account.dto';
 import { AccountIdParam } from 'src/param/AccountIdParam';
 import { UUIDParam } from 'src/param/UUIDParam';
 
@@ -78,5 +78,18 @@ export class BmsAccountController {
     @Body() data: DTO_RQ_AccountInfo,
   ) {
     return await this.service.UpdateInfoAccountById(param.id, data);
+  }
+
+  // M2_v1.F12
+  @Post(':id/change-password')
+  @Roles('ADMIN', 'STAFF')
+  async ChangePasswordAccountById(
+    @Param() param: UUIDParam,
+    @Body() data: DTO_RQ_ChangePassword,
+  ) {
+    return await this.service.ChangePasswordAccountById(
+      param.id,
+      data,
+    );
   }
 }
