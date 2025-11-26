@@ -195,76 +195,99 @@ export class BmsAccountService {
   // M2_v1.F2
   async CreateAccout(id: string, data: DTO_RQ_Account) {
     try {
-      console.time('CreateAccout');
+      // 1. kiểm tra công ty tồn tại
       const company = await this.companyRepo.findOne({
-        where: { id: id },
-        select: { id: true, company_code: true },
+        where: { id },
+        select: {
+          id: true,
+          company_code: true,
+        },
       });
+
       if (!company) {
         throw new NotFoundException('Không tìm thấy dữ liệu công ty');
       }
 
-      const newUsername = data.username + '.' + company.company_code;
+      // 2. Tạo username theo chuẩn
+      const newUsername = `${data.username}.${company.company_code}`;
+
+      // 3. Kiểm tra username có tồn tại chưa (tối ưu chỉ lấy id)
       const existing = await this.accountRepo.findOne({
         where: { username: newUsername },
+        select: { id: true },
       });
-      if (existing) throw new ConflictException('Tài khoản đã tồn tại');
 
+      if (existing) {
+        throw new ConflictException('Tài khoản đã tồn tại');
+      }
+
+      // 4. Hash mật khẩu
       const hashedPassword = await argon2.hash(data.password);
 
-      const newAccount = this.accountRepo.create({
-        company: company,
+      // 5. Chuẩn hóa dữ liệu null/empty
+      const normalize = (v: any) => (v === '' || v === undefined ? null : v);
+
+      // 6. Tạo entity account và accept_app
+      const account = this.accountRepo.create({
+        company,
         username: newUsername,
         password: hashedPassword,
-        email: data.email,
-        phone: data.phone,
+        email: normalize(data.email),
+        phone: normalize(data.phone),
         role: data.role,
-        address: data.address,
-        date_of_birth: data.date_of_birth,
+        address: normalize(data.address),
+        date_of_birth: normalize(data.date_of_birth),
         status: data.status,
         name: data.name,
         gender: data.gender,
         accept_app: this.acceptAppRepo.create({
-          bms: data.accept_app.bms,
-          cms: data.accept_app.cms,
-          ams: data.accept_app.ams,
-          driver: data.accept_app.driver,
+          bms: data.accept_app?.bms ?? false,
+          cms: data.accept_app?.cms ?? false,
+          ams: data.accept_app?.ams ?? false,
+          driver: data.accept_app?.driver ?? false,
         }),
       });
 
-      await this.accountRepo.save(newAccount);
-      const response = {
-        id: newAccount.id,
-        username: newAccount.username,
-        email: newAccount.email,
-        phone: newAccount.phone,
-        role: newAccount.role,
-        address: newAccount.address,
-        date_of_birth: newAccount.date_of_birth,
-        status: newAccount.status,
-        name: newAccount.name,
-        gender: newAccount.gender,
-        accept_app: {
-          bms: newAccount.accept_app.bms,
-          cms: newAccount.accept_app.cms,
-          ams: newAccount.accept_app.ams,
-          driver: newAccount.accept_app.driver,
+      // 7. Save
+      const saved = await this.accountRepo.save(account);
+
+      // 8. Lấy dữ liệu trả về tối ưu
+      const result = await this.accountRepo.findOne({
+        where: { id: saved.id },
+        relations: { accept_app: true },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          phone: true,
+          role: true,
+          address: true,
+          date_of_birth: true,
+          status: true,
+          name: true,
+          gender: true,
+          accept_app: {
+            bms: true,
+            cms: true,
+            ams: true,
+            driver: true,
+          },
         },
-      };
+      });
+
       return {
         success: true,
         message: 'Success',
         statusCode: HttpStatus.CREATED,
-        result: response,
+        result,
       };
     } catch (error) {
       if (error instanceof HttpException) throw error;
       console.error(error);
-      throw new InternalServerErrorException('Tạo tài khoản thất bại');
-    } finally {
-      console.timeEnd('CreateAccout');
+      throw new InternalServerErrorException('Lỗi hệ thống. Vui lòng thử lại sau.');
     }
   }
+
 
   // M2_v1.F3
   async GetListAccountByCompanyId(id: string) {
