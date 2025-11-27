@@ -14,6 +14,7 @@ import { Account } from 'src/entities/account.entity';
 import { Company } from 'src/entities/company.entity';
 import { Repository } from 'typeorm';
 import { DTO_RQ_Account, DTO_RQ_AccountInfo, DTO_RQ_ChangePassword } from './bms_account.dto';
+import { RefreshToken } from 'src/entities/refresh_token.entity';
 @Injectable()
 export class BmsAccountService {
   constructor(
@@ -23,9 +24,42 @@ export class BmsAccountService {
     private readonly acceptAppRepo: Repository<AcceptApp>,
     @InjectRepository(Company)
     private readonly companyRepo: Repository<Company>,
+    @InjectRepository(RefreshToken)
+    private readonly refreshTokenRepo: Repository<RefreshToken>,
   ) { }
 
 
+  async GetHistoryLoginByAccountId(id: string) {
+    try {
+      // Kiểm tra tài khoản tồn tại
+      const account = await this.accountRepo.findOne({ where: { id }, select: { id: true } });
+      if (!account) {
+        throw new NotFoundException('Tài khoản không tồn tại');
+      }
+      // Lấy lịch sử đăng nhập
+      const history = await this.refreshTokenRepo.find({
+        where: { account_id: account.id },
+        select: {
+          id: true,
+          user_agent: true,
+          ip_address: true,
+          created_at: true,
+        },
+        order: { created_at: 'DESC' },
+      });
+      return {
+        success: true,
+        message: 'Success',
+        statusCode: HttpStatus.OK,
+        result: history,
+        
+      };
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      console.error(error);
+      throw new InternalServerErrorException('Lỗi hệ thống. Vui lòng thử lại sau.');
+    }
+  }
   // M2_v1.F10
   async GetInfoAccountById(id: string) {
     try {

@@ -10,10 +10,11 @@ import { BmsAccountService } from './bms/bms_account.service';
 import { CommissionAgent } from 'src/entities/commission_agent.entity';
 import { BmsAgentController } from './bms/bms_agent.controller';
 import { BmsAgentService } from './bms_agent.service';
+import { RefreshToken } from 'src/entities/refresh_token.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([AcceptApp, Account, Company, CommissionAgent]),
+    TypeOrmModule.forFeature([AcceptApp, Account, Company, CommissionAgent, RefreshToken]),
   ],
   controllers: [SPAccountController, BmsAccountController, BmsAgentController],
   providers: [SPAccountService, BmsAccountService, BmsAgentService],

@@ -96,4 +96,10 @@ export class BmsAccountController {
       data,
     );
   }
+
+  @Get(':id/history-login')
+  @Roles('ADMIN', 'STAFF')
+  async GetHistoryLoginByAccountId(@Param() param: UUIDParam) {
+    return await this.service.GetHistoryLoginByAccountId(param.id);
+  }
 }
