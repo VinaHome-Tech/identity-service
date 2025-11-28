@@ -8,10 +8,10 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Company } from './company.entity';
 import { AcceptApp } from './accept_app.entity';
 import { RefreshToken } from './refresh_token.entity';
 import { CommissionAgent } from './commission_agent.entity';
+import { CompanyOrmEntity } from 'src/modules/company/entities/CompanyOrmEntity';
 
 @Entity('tbl_account')
 export class Account {
@@ -39,12 +39,11 @@ export class Account {
   name: string;
   @CreateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
-  @ManyToOne(() => Company, (company) => company.accounts, {
+  @ManyToOne(() => CompanyOrmEntity, (company) => company.accounts, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'company_id' })
-  company: Company;
-
+  company: CompanyOrmEntity;
   @OneToOne(() => AcceptApp, (acceptApp) => acceptApp.account, {
     cascade: true,
     nullable: true,

@@ -6,16 +6,16 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Company } from 'src/entities/company.entity';
 import { Repository } from 'typeorm';
 import { DTO_RP_Company, DTO_RQ_Company } from './platform_company.dto';
 import { plainToInstance } from 'class-transformer';
+import { CompanyOrmEntity } from '../entities/CompanyOrmEntity';
 
 @Injectable()
 export class PLATFORMCompanyService {
   constructor(
-    @InjectRepository(Company)
-    private readonly repo: Repository<Company>,
+    @InjectRepository(CompanyOrmEntity)
+    private readonly repo: Repository<CompanyOrmEntity>,
   ) {}
 
   async CreateCompany(data: DTO_RQ_Company) {

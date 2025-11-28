@@ -12,8 +12,8 @@ import { DataSource, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AcceptApp } from 'src/entities/accept_app.entity';
 import * as argon2 from 'argon2';
-import { Company } from 'src/entities/company.entity';
 import { plainToInstance } from 'class-transformer';
+import { CompanyOrmEntity } from '../company/entities/CompanyOrmEntity';
 
 @Injectable()
 export class SPAccountService {
@@ -22,8 +22,8 @@ export class SPAccountService {
     private readonly accountRepo: Repository<Account>,
     @InjectRepository(AcceptApp)
     private readonly acceptAppRepo: Repository<AcceptApp>,
-    @InjectRepository(Company)
-    private readonly companyRepo: Repository<Company>,
+    @InjectRepository(CompanyOrmEntity)
+    private readonly companyRepo: Repository<CompanyOrmEntity>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -34,7 +34,7 @@ export class SPAccountService {
     await queryRunner.startTransaction();
 
     try {
-      const company = await queryRunner.manager.findOne(Company, {
+      const company = await queryRunner.manager.findOne(CompanyOrmEntity, {
         where: { id: data.company_id },
         select: { id: true, company_code: true },
       });

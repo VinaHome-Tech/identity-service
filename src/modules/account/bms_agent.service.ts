@@ -11,16 +11,16 @@ import { CommissionAgent } from 'src/entities/commission_agent.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Account } from 'src/entities/account.entity';
 import { DataSource, Repository } from 'typeorm';
-import { Company } from 'src/entities/company.entity';
 import * as argon2 from 'argon2';
 import { AcceptApp } from 'src/entities/accept_app.entity';
+import { CompanyOrmEntity } from '../company/entities/CompanyOrmEntity';
 @Injectable()
 export class BmsAgentService {
   constructor(
     @InjectRepository(Account)
     private readonly accountRepo: Repository<Account>,
-    @InjectRepository(Company)
-    private readonly companyRepo: Repository<Company>,
+    @InjectRepository(CompanyOrmEntity)
+    private readonly companyRepo: Repository<CompanyOrmEntity>,
     @InjectRepository(AcceptApp)
     private readonly acceptAppRepo: Repository<AcceptApp>,
     @InjectRepository(CommissionAgent)

@@ -11,10 +11,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as argon2 from 'argon2';
 import { AcceptApp } from 'src/entities/accept_app.entity';
 import { Account } from 'src/entities/account.entity';
-import { Company } from 'src/entities/company.entity';
 import { Repository } from 'typeorm';
 import { DTO_RQ_Account, DTO_RQ_AccountInfo, DTO_RQ_ChangePassword } from './bms_account.dto';
 import { RefreshToken } from 'src/entities/refresh_token.entity';
+import { CompanyOrmEntity } from 'src/modules/company/entities/CompanyOrmEntity';
 @Injectable()
 export class BmsAccountService {
   constructor(
@@ -22,8 +22,8 @@ export class BmsAccountService {
     private readonly accountRepo: Repository<Account>,
     @InjectRepository(AcceptApp)
     private readonly acceptAppRepo: Repository<AcceptApp>,
-    @InjectRepository(Company)
-    private readonly companyRepo: Repository<Company>,
+    @InjectRepository(CompanyOrmEntity)
+    private readonly companyRepo: Repository<CompanyOrmEntity>,
     @InjectRepository(RefreshToken)
     private readonly refreshTokenRepo: Repository<RefreshToken>,
   ) { }

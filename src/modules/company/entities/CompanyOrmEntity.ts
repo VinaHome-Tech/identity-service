@@ -1,14 +1,15 @@
+import { Account } from 'src/entities/account.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
   OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
-import { Account } from './account.entity';
 
 @Entity('tbl_company')
-export class Company {
+export class CompanyOrmEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
   @Column({ type: 'varchar', nullable: false, length: 255 }) // Tên công ty
@@ -39,8 +40,11 @@ export class Company {
   bank_account_number: string;
   @Column({ type: 'varchar', nullable: true, length: 255 }) // Tên chủ tài khoản ngân hàng
   bank_account_name: string;
-  @CreateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
+
+  @UpdateDateColumn({ type: 'timestamptz' })
+  updated_at: Date;
   @OneToMany(() => Account, (account) => account.company)
   accounts: Account[];
 }
